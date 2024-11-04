@@ -55,28 +55,34 @@ public class SpringSecurity {
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http.cors(withDefaults())
-//                        .csrf(csrf ->
-//                        csrf.csrfTokenRepository(new HttpSessionCsrfTokenRepository())
-//                                .ignoringRequestMatchers("/api/auth/public/**")
-//                );
-        .csrf( AbstractHttpConfigurer::disable);
-        http.authorizeHttpRequests((requests)
-                -> requests
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/csrf-token").permitAll()
-                .requestMatchers("/error", "/api/auth/public/**").permitAll()
-                .requestMatchers("/oauth2/**").permitAll()
-                        .anyRequest().authenticated())
-                .oauth2Login(oauth2 -> {
-                    oauth2.successHandler(oAuth2LoginSuccessHandler);
-                });
+                .csrf(AbstractHttpConfigurer::disable)  // CSRF is disabled for stateless JWT-based auth
 
-        http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        http.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler));
-        http.httpBasic(withDefaults());
+                // Authorization configuration
+                .authorizeHttpRequests((requests) -> requests
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")     // Require ADMIN role for admin endpoints
+                        .requestMatchers("/api/csrf-token").permitAll()        // Permit access to CSRF token endpoint
+                        .requestMatchers("/error", "/api/auth/public/**").permitAll()  // Permit access to public endpoints
+                        .requestMatchers("/oauth2/**").permitAll()             // Permit OAuth2 login endpoints
+                        .requestMatchers("/", "/favicon.ico").permitAll()
+                        .anyRequest().authenticated()                          // Require authentication for all other endpoints
+                )
+                // OAuth2 Login configuration
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler)  // Handle OAuth2 login success
+                )
+                // Session management for stateless JWT tokens
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Custom entry point for unauthorized requests
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+                // Basic HTTP authentication
+                .httpBasic(withDefaults());
+
+        // JWT token filter
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
