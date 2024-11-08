@@ -32,7 +32,7 @@ public class InvoiceExcelService {
             int rowIndex = 1;
 //            for (Invoice invoice : invoices) {
             Row row = sheet.createRow(rowIndex++);
-            row.createCell(0).setCellValue(invoice.getCustomerName());
+            row.createCell(0).setCellValue(invoice.getCustomer().getCustomerName());
             row.createCell(1).setCellValue(invoice.getInvoiceNumber());
             row.createCell(2).setCellValue(invoice.getInvoiceDate().toString());
             row.createCell(3).setCellValue(invoice.getTotalAmount());

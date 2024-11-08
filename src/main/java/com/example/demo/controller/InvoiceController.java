@@ -35,7 +35,7 @@ public class InvoiceController {
 
     @GetMapping
     public List<Invoice> getInvoices(@AuthenticationPrincipal UserDetails userDetails) {
-        return invoiceService.getInvoices(userDetails.getUsername());
+        return invoiceService.getInvoices(userDetails);
     }
 
     @DeleteMapping("/{id}")
@@ -64,7 +64,7 @@ public class InvoiceController {
                     .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(new InputStreamResource(excelStream));
         }
-        return ResponseEntity.notFound().build(); // return a 404 if the invoice is not found
+        return ResponseEntity.notFound().build();
     }
 
 }

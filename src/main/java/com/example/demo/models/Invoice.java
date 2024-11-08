@@ -19,14 +19,17 @@ public class Invoice {
 
     private LocalDate invoiceDate;
     private String invoiceNumber;
-    private String customerName;
     private Integer gstPercentage;
     private Double totalAmount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", referencedColumnName = "user_id",  nullable = false)
+    @JoinColumn(name = "created_by", referencedColumnName = "user_id", nullable = false)
     @JsonIgnore
     private User createdBy;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "invoice_id")
@@ -45,7 +48,10 @@ public class Invoice {
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
-        private String product;
+
+        @ManyToOne(fetch = FetchType.EAGER)
+        @JoinColumn(name = "product_id", nullable = false)
+        private com.example.demo.models.Product product;
         private Integer qty;
         private Double price;
     }

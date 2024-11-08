@@ -9,13 +9,13 @@ import java.util.List;
 public class InvoiceDTO {
     private LocalDate invoiceDate;
     private String invoiceNumber;
-    private String customerName;
+    private Long customerId; // Referencing the Customer by ID
     private Integer gstPercentage;
     private List<ProductDTO> products;
 
     @Data
     public static class ProductDTO {
-        private String product;
+        private Long productId; // Updated to match the product name in the entity
         private Integer qty;
         private Double price;
     }
