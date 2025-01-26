@@ -1,5 +1,9 @@
 package com.example.demo.models;
 
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,21 +14,25 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Product {
+public class SalesTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private String description;
-    private String sku;
-    private String hsnCode;
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
+
+    private Integer quantity;
     private Double price;
+    private LocalDate date;
 
     @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @JoinColumn(name = "invoice_id")
+    @JsonIgnore
+    private Invoice invoice;
 
-    private Integer stockLevel;
-    private Integer minStockLevel;
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
 }

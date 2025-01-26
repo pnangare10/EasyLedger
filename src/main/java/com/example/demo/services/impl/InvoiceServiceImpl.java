@@ -1,24 +1,30 @@
 package com.example.demo.services.impl;
 
-import com.example.demo.dto.InvoiceDTO;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.demo.dto.CustomerResponse;
+import com.example.demo.dto.InvoiceRequest;
+import com.example.demo.dto.InvoiceResponse;
+import com.example.demo.dto.ProductResponse;
+import com.example.demo.dto.SalesTransactionRequest;
+import com.example.demo.dto.SalesTransactionResponse;
+import com.example.demo.dto.UserResponse;
 import com.example.demo.models.Customer;
 import com.example.demo.models.Invoice;
 import com.example.demo.models.Product;
+import com.example.demo.models.SalesTransaction;
 import com.example.demo.models.User;
 import com.example.demo.repository.CustomerRepository;
 import com.example.demo.repository.InvoiceRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.services.InvoiceService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class InvoiceServiceImpl implements InvoiceService {
@@ -27,84 +33,128 @@ public class InvoiceServiceImpl implements InvoiceService {
     private InvoiceRepository invoiceRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    private CustomerRepository customerRepository;
 
     @Autowired
-    private CustomerRepository customerRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private ProductRepository productRepository;
 
     @Override
-    public Invoice createInvoice(InvoiceDTO invoiceDTO, UserDetails userDetails) {
-        User user = userRepository.findByUserName(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("User cannot be null"));
+    @Transactional
+    public InvoiceResponse createInvoice(InvoiceRequest invoiceRequest, UserDetails userDetails) {
+        Invoice invoice = convertToEntity(invoiceRequest, userDetails);
+        invoice = invoiceRepository.save(invoice);
+        return convertToResponse(invoice);
+    }
 
-        Customer customer = customerRepository.findById(invoiceDTO.getCustomerId())
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+    @Override
+    public List<InvoiceResponse> getAllInvoices() {
+        return invoiceRepository.findAll().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
 
+    @Override
+    public InvoiceResponse getInvoiceById(Long id) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+        return convertToResponse(invoice);
+    }
+
+    @Override
+    public void deleteInvoice(Long id) {
+        invoiceRepository.deleteById(id);
+    }
+
+    private Invoice convertToEntity(InvoiceRequest invoiceRequest, UserDetails userDetails) {
         Invoice invoice = new Invoice();
-        invoice.setInvoiceDate(invoiceDTO.getInvoiceDate());
-        invoice.setInvoiceNumber(invoiceDTO.getInvoiceNumber());
-        invoice.setGstPercentage(invoiceDTO.getGstPercentage());
-        invoice.setCreatedBy(user);
+        invoice.setInvoiceDate(invoiceRequest.invoiceDate());
+        invoice.setInvoiceNumber(invoiceRequest.invoiceNumber());
+        invoice.setGstPercentage(invoiceRequest.gstPercentage());
+
+        Customer customer = customerRepository.findById(invoiceRequest.customerId())
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
         invoice.setCustomer(customer);
 
-        double totalAmount = invoiceDTO.getProducts().stream()
-                .mapToDouble(p -> p.getPrice() * p.getQty())
-                .sum();
-        totalAmount += totalAmount * invoiceDTO.getGstPercentage() / 100;
-        invoice.setTotalAmount(totalAmount);
+        User createdBy = userRepository.findByUserName(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        invoice.setCreatedBy(createdBy);
 
-        List<Invoice.Product> products = invoiceDTO.getProducts().stream().map(p -> {
-            Product productEntity = productRepository.findById(p.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found"));
-            Invoice.Product product = new Invoice.Product();
-            product.setProduct(productEntity);
-            product.setQty(p.getQty());
-            product.setPrice(p.getPrice());
-            return product;
-        }).collect(Collectors.toList());
-
-        invoice.setProducts(products);
-
-        return invoiceRepository.save(invoice);
+        List<SalesTransaction> salesTransactions = invoiceRequest.salesTransactions().stream()
+                .map(request -> convertToEntity(request, invoice))
+                .collect(Collectors.toList());
+        invoice.setSalesTransactions(salesTransactions);
+        return invoice;
     }
 
+    private SalesTransaction convertToEntity(SalesTransactionRequest salesTransactionRequest, Invoice invoice) {
+        SalesTransaction salesTransaction = new SalesTransaction();
 
-    @Override
-    public List<Invoice> getInvoices(UserDetails userDetails) {
-        Optional<User> userOptional = userRepository.findByUserName(userDetails.getUsername());
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            List<Invoice> invoices = invoiceRepository.findAll(Sort.by(Sort.Direction.DESC, "createdDate"));
-            return invoices;
-        } else {
-            throw new RuntimeException("Invoices not found");
-        }
+        Product product = productRepository.findById(salesTransactionRequest.productId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        salesTransaction.setProduct(product);
+        salesTransaction.setQuantity(salesTransactionRequest.quantity());
+        salesTransaction.setPrice(salesTransactionRequest.price());
+        salesTransaction.setInvoice(invoice);
+        salesTransaction.setDate(invoice.getInvoiceDate());
+
+        return salesTransaction;
     }
 
-    @Override
-    @Transactional
-    public void deleteInvoice(Long id, UserDetails userDetails) {
-        Optional<User> userOptional = userRepository.findByUserName(userDetails.getUsername());
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            invoiceRepository.deleteByIdAndCreatedBy(id, user);
-        } else {
-            throw new RuntimeException("User not found");
-        }
+    private InvoiceResponse convertToResponse(Invoice invoice) {
+        CustomerResponse customerResponse = new CustomerResponse(
+                invoice.getCustomer().getId(),
+                invoice.getCustomer().getCustomerName(),
+                invoice.getCustomer().getAddress(),
+                invoice.getCustomer().getEmail(),
+                invoice.getCustomer().getPhone(),
+                invoice.getCustomer().getGstNumber(),
+                invoice.getCustomer().getVendorCode()
+        );
+
+        List<SalesTransactionResponse> salesTransactionResponses = invoice.getSalesTransactions().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+
+        UserResponse createdByResponse = new UserResponse(
+                invoice.getCreatedBy().getUserId(),
+                invoice.getCreatedBy().getUserName()
+        );
+
+        return new InvoiceResponse(
+                invoice.getId(),
+                invoice.getInvoiceDate(),
+                invoice.getInvoiceNumber(),
+                invoice.getGstPercentage(),
+                invoice.getTotalAmount(),
+                customerResponse,
+                salesTransactionResponses,
+                createdByResponse,
+                invoice.getCreatedDate(),
+                invoice.getUpdatedDate()
+        );
     }
 
-    @Override
-    public Optional<Invoice> getInvoiceById(Long id, UserDetails userDetails) {
-        Optional<User> userOptional = userRepository.findByUserName(userDetails.getUsername());
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            return invoiceRepository.findByIdAndCreatedBy(id, user);
-        } else {
-            throw new RuntimeException("User not found");
-        }
+    private SalesTransactionResponse convertToResponse(SalesTransaction salesTransaction) {
+        ProductResponse productResponse = new ProductResponse(
+                salesTransaction.getProduct().getId(),
+                salesTransaction.getProduct().getName(),
+                salesTransaction.getProduct().getDescription(),
+                salesTransaction.getProduct().getSku(),
+                salesTransaction.getProduct().getPrice(),
+                salesTransaction.getProduct().getStockLevel(),
+                salesTransaction.getProduct().getMinStockLevel(),
+                salesTransaction.getProduct().getHsnCode()
+        );
 
+        return new SalesTransactionResponse(
+                salesTransaction.getId(),
+                productResponse,
+                salesTransaction.getQuantity(),
+                salesTransaction.getPrice(),
+                salesTransaction.getDate()
+        );
     }
 }

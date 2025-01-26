@@ -31,9 +31,8 @@ public class Invoice {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "invoice_id")
-    private List<Product> products;
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SalesTransaction> salesTransactions;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -41,18 +40,4 @@ public class Invoice {
 
     @UpdateTimestamp
     private LocalDateTime updatedDate;
-
-    @Data
-    @Entity
-    public static class Product {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-
-        @ManyToOne(fetch = FetchType.EAGER)
-        @JoinColumn(name = "product_id", nullable = false)
-        private com.example.demo.models.Product product;
-        private Integer qty;
-        private Double price;
-    }
 }

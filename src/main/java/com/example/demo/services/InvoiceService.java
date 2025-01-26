@@ -1,18 +1,14 @@
 package com.example.demo.services;
 
-import com.example.demo.dto.InvoiceDTO;
-import com.example.demo.models.Invoice;
+import com.example.demo.dto.InvoiceRequest;
+import com.example.demo.dto.InvoiceResponse;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface InvoiceService {
-    Invoice createInvoice(InvoiceDTO invoiceDTO, UserDetails user);
-
-    List<Invoice> getInvoices(UserDetails userDetails);
-
-    void deleteInvoice(Long id, UserDetails createdBy);
-    Optional<Invoice> getInvoiceById(Long id, UserDetails createdBy);
-
+    InvoiceResponse createInvoice(InvoiceRequest invoiceRequest, UserDetails userDetails);
+    List<InvoiceResponse> getAllInvoices();
+    InvoiceResponse getInvoiceById(Long id);
+    void deleteInvoice(Long id);
 }

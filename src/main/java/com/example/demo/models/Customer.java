@@ -21,6 +21,7 @@ public class Customer {
     private String email;
     private String phone;
     private String gstNumber; // GST number for tax purposes
+    private String vendorCode;
 //    private String companyName;
 
     @ManyToOne(fetch = FetchType.LAZY)

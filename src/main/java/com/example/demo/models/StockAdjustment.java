@@ -1,5 +1,7 @@
 package com.example.demo.models;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,21 +12,16 @@ import lombok.Data;
 
 @Entity
 @Data
-public class Product {
+public class StockAdjustment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private String description;
-    private String sku;
-    private String hsnCode;
-    private Double price;
-
     @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @JoinColumn(name = "product_id")
+    private Product product;
 
-    private Integer stockLevel;
-    private Integer minStockLevel;
+    private Integer quantity;
+    private String reason;
+    private LocalDate date;
 }

@@ -1,5 +1,6 @@
 package com.example.demo.jwt;
 
+import com.example.demo.config.services.UserDetailsImpl;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtUtils {
@@ -37,7 +40,11 @@ public class JwtUtils {
     }
 
     public String generateTokenFromUsername(UserDetails userDetails) {
-        String username = userDetails.getUsername();
+        UserDetailsImpl customUserDetails = (UserDetailsImpl) userDetails;
+        String username = customUserDetails.getUsername();
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", customUserDetails.getId());
+        claims.put("username", username);
         return Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date())

@@ -84,7 +84,6 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-
     @PostMapping("/public/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByUserName(signUpRequest.getUsername())) {
@@ -162,7 +161,7 @@ public class AuthController {
         return (userDetails != null) ? userDetails.getUsername() : "";
     }
 
-    @PostMapping("/public/forgot-password")
+    @GetMapping("/public/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         try {
             userService.generatePasswordResetToken(email);
