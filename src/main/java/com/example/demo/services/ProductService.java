@@ -2,6 +2,8 @@ package com.example.demo.services;
 
 import com.example.demo.dto.ProductRequest;
 import com.example.demo.dto.ProductResponse;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -10,4 +12,6 @@ public interface ProductService {
     List<ProductResponse> getAllProducts();
     Optional<ProductResponse> getProductById(Long id);
     void deleteProduct(Long productId);
+
+    ProductResponse updateProduct(Long id, ProductRequest productRequest);
 }

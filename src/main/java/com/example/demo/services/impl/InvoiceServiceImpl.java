@@ -146,7 +146,10 @@ public class InvoiceServiceImpl implements InvoiceService {
                 salesTransaction.getProduct().getPrice(),
                 salesTransaction.getProduct().getStockLevel(),
                 salesTransaction.getProduct().getMinStockLevel(),
-                salesTransaction.getProduct().getHsnCode()
+                salesTransaction.getProduct().getReservedStock(),
+                salesTransaction.getProduct().getHsnCode(),
+                salesTransaction.getProduct().getItemType(),
+                salesTransaction.getProduct().getUnitOfMeasurement()
         );
 
         return new SalesTransactionResponse(

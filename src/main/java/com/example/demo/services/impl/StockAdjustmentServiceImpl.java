@@ -35,7 +35,17 @@ public class StockAdjustmentServiceImpl implements StockAdjustmentService {
         stockAdjustment.setQuantity(stockAdjustmentRequest.quantity());
         stockAdjustment.setReason(stockAdjustmentRequest.reason());
         stockAdjustment.setDate(LocalDate.parse(stockAdjustmentRequest.date(), formatter));
-
+        switch (stockAdjustmentRequest.type()) {
+            case "IN":
+                product.setStockLevel(product.getStockLevel() + stockAdjustmentRequest.quantity());
+                break;
+            case "OUT":
+                product.setStockLevel(product.getStockLevel() - stockAdjustmentRequest.quantity());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid type");
+        }
+        productRepository.save(product);
         stockAdjustment = stockAdjustmentRepository.save(stockAdjustment);
         return convertToResponse(stockAdjustment);
     }

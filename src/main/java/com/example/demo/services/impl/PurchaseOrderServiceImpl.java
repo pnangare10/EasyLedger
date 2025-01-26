@@ -141,7 +141,10 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 receivedGoods.getProduct().getPrice(),
                 receivedGoods.getProduct().getStockLevel(),
                 receivedGoods.getProduct().getMinStockLevel(),
-                receivedGoods.getProduct().getHsnCode()
+                receivedGoods.getProduct().getReservedStock(),
+                receivedGoods.getProduct().getHsnCode(),
+                receivedGoods.getProduct().getItemType(),
+                receivedGoods.getProduct().getUnitOfMeasurement()
         );
 
         return new ReceivedGoodsResponse(

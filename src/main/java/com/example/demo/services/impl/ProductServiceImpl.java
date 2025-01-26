@@ -1,6 +1,7 @@
 package com.example.demo.services.impl;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.dto.ProductRequest;
@@ -33,7 +35,10 @@ public class ProductServiceImpl implements ProductService {
         product.setPrice(productRequest.price());
         product.setStockLevel(productRequest.stockLevel());
         product.setMinStockLevel(productRequest.minStockLevel());
+        product.setReservedStock(productRequest.reservedStock());
         product.setHsnCode(productRequest.hsnCode());
+        product.setItemType(productRequest.itemType());
+        product.setUnitOfMeasurement(productRequest.unitOfMeasurement());
         product = productRepository.save(product);
         logger.info("Product created: {}", product);
         return convertToResponse(product);
@@ -65,6 +70,43 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    @Override
+    public ProductResponse updateProduct(Long id, ProductRequest productRequest) {
+        Product product = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+        // Partial update logic
+        if (productRequest.name() != null) {
+            product.setName(productRequest.name());
+        }
+        if (productRequest.description() != null) {
+            product.setDescription(productRequest.description());
+        }
+        if (productRequest.sku() != null) {
+            product.setSku(productRequest.sku());
+        }
+        if (productRequest.price() != null) {
+            product.setPrice(productRequest.price());
+        }
+        if (productRequest.stockLevel() != null) {
+            product.setStockLevel(productRequest.stockLevel());
+        }
+        if (productRequest.minStockLevel() != null) {
+            product.setMinStockLevel(productRequest.minStockLevel());
+        }
+        if (productRequest.hsnCode() != null) {
+            product.setHsnCode(productRequest.hsnCode());
+        }
+        if (productRequest.itemType() != null) {
+            product.setItemType(productRequest.itemType());
+        }
+        if (productRequest.unitOfMeasurement() != null) {
+            product.setUnitOfMeasurement(productRequest.unitOfMeasurement());
+        }
+
+        product = productRepository.save(product);
+        logger.info("Product updated: {}", product);
+        return convertToResponse(product);
+    }
+
     private ProductResponse convertToResponse(Product product) {
         return new ProductResponse(
                 product.getId(),
@@ -74,7 +116,10 @@ public class ProductServiceImpl implements ProductService {
                 product.getPrice(),
                 product.getStockLevel(),
                 product.getMinStockLevel(),
-                product.getHsnCode()
+                product.getReservedStock(),
+                product.getHsnCode(),
+                product.getItemType(),
+                product.getUnitOfMeasurement()
         );
     }
 }

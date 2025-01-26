@@ -25,6 +25,19 @@ public class Product {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    private Integer reservedStock = 0;
+
     private Integer stockLevel;
     private Integer minStockLevel;
+    private String unitOfMeasurement;
+    private String itemType; // e.g., "Raw Material", "Finished Product", "Both"
+
+    // Add to existing class
+    public void reserveStock(int quantity) {
+        this.reservedStock += quantity;
+    }
+
+    public void releaseReservedStock(int quantity) {
+        this.reservedStock = Math.max(0, this.reservedStock - quantity);
+    }
 }

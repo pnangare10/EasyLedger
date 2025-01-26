@@ -4,8 +4,11 @@ public record ProductRequest(
     String name,
     String description,
     String sku,
-    double price,
-    int stockLevel,
-    int minStockLevel,
-    String hsnCode
+    Double price,
+    Integer stockLevel,
+    Integer minStockLevel,
+    Integer reservedStock,
+    String hsnCode,
+    String itemType,
+    String unitOfMeasurement
 ) {}
