@@ -7,6 +7,5 @@ public record InvoiceRequest(
     LocalDate invoiceDate,
     String invoiceNumber,
     int gstPercentage,
-    Long customerId,
-    List<SalesTransactionRequest> salesTransactions
+    Long salesOrderId
 ) {}

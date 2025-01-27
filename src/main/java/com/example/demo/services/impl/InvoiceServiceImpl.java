@@ -3,27 +3,14 @@ package com.example.demo.services.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.example.demo.dto.*;
+import com.example.demo.models.*;
+import com.example.demo.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.demo.dto.CustomerResponse;
-import com.example.demo.dto.InvoiceRequest;
-import com.example.demo.dto.InvoiceResponse;
-import com.example.demo.dto.ProductResponse;
-import com.example.demo.dto.SalesTransactionRequest;
-import com.example.demo.dto.SalesTransactionResponse;
-import com.example.demo.dto.UserResponse;
-import com.example.demo.models.Customer;
-import com.example.demo.models.Invoice;
-import com.example.demo.models.Product;
-import com.example.demo.models.SalesTransaction;
-import com.example.demo.models.User;
-import com.example.demo.repository.CustomerRepository;
-import com.example.demo.repository.InvoiceRepository;
-import com.example.demo.repository.ProductRepository;
-import com.example.demo.repository.UserRepository;
 import com.example.demo.services.InvoiceService;
 
 @Service
@@ -40,6 +27,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private SalesOrderRepository salesOrderRepository;
 
     @Override
     @Transactional
@@ -73,19 +63,19 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setInvoiceDate(invoiceRequest.invoiceDate());
         invoice.setInvoiceNumber(invoiceRequest.invoiceNumber());
         invoice.setGstPercentage(invoiceRequest.gstPercentage());
+        SalesOrder salesOrder = salesOrderRepository.findById(invoiceRequest.salesOrderId())
+                .orElseThrow(() -> new RuntimeException("Sales Order not found"));
 
-        Customer customer = customerRepository.findById(invoiceRequest.customerId())
+        Customer customer = customerRepository.findById(salesOrder.getCustomer().getId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
+
         invoice.setCustomer(customer);
 
         User createdBy = userRepository.findByUserName(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         invoice.setCreatedBy(createdBy);
 
-        List<SalesTransaction> salesTransactions = invoiceRequest.salesTransactions().stream()
-                .map(request -> convertToEntity(request, invoice))
-                .collect(Collectors.toList());
-        invoice.setSalesTransactions(salesTransactions);
+        invoice.setSalesOrder(salesOrder);
         return invoice;
     }
 
@@ -113,10 +103,17 @@ public class InvoiceServiceImpl implements InvoiceService {
                 invoice.getCustomer().getGstNumber(),
                 invoice.getCustomer().getVendorCode()
         );
-
-        List<SalesTransactionResponse> salesTransactionResponses = invoice.getSalesTransactions().stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
+        SalesOrder salesOrder = invoice.getSalesOrder();
+        SalesOrderResponse salesOrderResponse = new SalesOrderResponse(
+                salesOrder.getId(),
+                salesOrder.getOrderNumber(),
+                salesOrder.getOrderDate(),
+                salesOrder.getStatus(),
+                convertToCustomerResponse(salesOrder.getCustomer()),
+                convertToSalesOrderItemsResponse(salesOrder.getItems()),
+                salesOrder.getManufacturingProcess() != null ? convertToManufacturingProcess(salesOrder.getManufacturingProcess()): null,
+                salesOrder.getCreatedDate()
+        );
 
         UserResponse createdByResponse = new UserResponse(
                 invoice.getCreatedBy().getUserId(),
@@ -130,12 +127,96 @@ public class InvoiceServiceImpl implements InvoiceService {
                 invoice.getGstPercentage(),
                 invoice.getTotalAmount(),
                 customerResponse,
-                salesTransactionResponses,
+                salesOrderResponse,
                 createdByResponse,
                 invoice.getCreatedDate(),
                 invoice.getUpdatedDate()
         );
     }
+
+    private ManufacturingProcessResponse convertToManufacturingProcess(ManufacturingProcess manufacturingProcess) {
+        return new ManufacturingProcessResponse(
+                manufacturingProcess.getId(),
+                manufacturingProcess.getManufacturingId(),
+                manufacturingProcess.getQuantityToProduce(),
+                manufacturingProcess.getExpectedCompletionDate(),
+                manufacturingProcess.getStatus(),
+                convertToBOMResponse(manufacturingProcess.getBom()),
+                convertToManufacturingStagesResponse(manufacturingProcess.getStages())
+        );
+    }
+
+    private BOMResponse convertToBOMResponse(BillOfMaterials bom) {
+        return new BOMResponse(
+                bom.getId(),
+                bom.getName(),
+                bom.getVersion(),
+                bom.getCreatedDate(),
+                convertToProductResponse(bom.getProduct()),
+                convertToBOMItemResponse(bom.getItems())
+        );
+    }
+
+    private List<BOMItemResponse> convertToBOMItemResponse(List<BOMItem> bomItems) {
+        return bomItems.stream()
+                .map(bomItem -> new BOMItemResponse(
+                        bomItem.getRawMaterial().getId(),
+                        bomItem.getRawMaterial().getName(),
+                        bomItem.getQuantity()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    private List<ManufacturingStageResponse> convertToManufacturingStagesResponse(List<ManufacturingStage> manufacturingStages) {
+        return manufacturingStages.stream()
+                .map(manufacturingStage -> new ManufacturingStageResponse(
+                        manufacturingStage.getId(),
+                        manufacturingStage.getName(),
+                        manufacturingStage.getDueDate(),
+                        manufacturingStage.getStatus(),
+                        manufacturingStage.getDescription()
+                ))
+                .collect(Collectors.toList());
+    }
+    private CustomerResponse convertToCustomerResponse(Customer customer) {
+        return new CustomerResponse(
+                customer.getId(),
+                customer.getCustomerName(),
+                customer.getAddress(),
+                customer.getEmail(),
+                customer.getPhone(),
+                customer.getGstNumber(),
+                customer.getVendorCode()
+        );
+    }
+
+    private List<SalesOrderItemResponse> convertToSalesOrderItemsResponse(List<SalesOrderItem> salesOrderItems) {
+        return salesOrderItems.stream()
+                .map(salesOrderItem -> new SalesOrderItemResponse(
+                        salesOrderItem.getId(),
+                        convertToProductResponse(salesOrderItem.getProduct()),
+                        salesOrderItem.getQuantity(),
+                        salesOrderItem.getUnitPrice()
+
+                ))
+                .collect(Collectors.toList());
+    }
+    private ProductResponse convertToProductResponse(Product product) {
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getSku(),
+                product.getPrice(),
+                product.getStockLevel(),
+                product.getMinStockLevel(),
+                product.getReservedStock(),
+                product.getHsnCode(),
+                product.getItemType(),
+                product.getUnitOfMeasurement()
+        );
+    }
+
 
     private SalesTransactionResponse convertToResponse(SalesTransaction salesTransaction) {
         ProductResponse productResponse = new ProductResponse(

@@ -8,6 +8,7 @@ import java.util.List;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 
+import com.example.demo.models.SalesOrderItem;
 import com.example.demo.models.SalesTransaction;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.sl.usermodel.Sheet;
@@ -98,9 +99,9 @@ public class InvoiceExporter {
 		Double rate = 0.0;
 		int qty = 0;
 
-		List<SalesTransaction> list = this.invoice.getSalesTransactions();
-		for (SalesTransaction entry : list) {
-			rate = entry.getPrice();
+		List<SalesOrderItem> list = this.invoice.getSalesOrder().getItems();
+		for (SalesOrderItem entry : list) {
+			rate = entry.getUnitPrice();
 			qty = entry.getQuantity();
 			if (srno > 7) {
 				row = sheet.createRow(rownumber);

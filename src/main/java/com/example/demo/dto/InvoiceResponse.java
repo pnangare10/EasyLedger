@@ -11,7 +11,7 @@ public record InvoiceResponse(
     Integer gstPercentage,
     Double totalAmount,
     CustomerResponse customer,
-    List<SalesTransactionResponse> salesTransactions,
+    SalesOrderResponse salesOrder,
     UserResponse createdBy,
     LocalDateTime createdDate,
     LocalDateTime updatedDate

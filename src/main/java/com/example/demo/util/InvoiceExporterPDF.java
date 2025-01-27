@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.example.demo.models.SalesOrderItem;
 import com.example.demo.models.SalesTransaction;
 import org.apache.commons.math3.util.Precision;
 import org.springframework.core.io.ByteArrayResource;
@@ -112,20 +113,20 @@ public class InvoiceExporterPDF {
 		createCell(table, "Qty", TextAlignment.CENTER, 1, 1, true, fontSize, ht);
 		createCell(table, "Rate", TextAlignment.CENTER, 1, 1, true, fontSize, ht);
 		createCell(table, "Amount", TextAlignment.CENTER, 1, 1, true, fontSize, ht);
-		List<SalesTransaction> list = this.invoice.getSalesTransactions();
+		List<SalesOrderItem> list = this.invoice.getSalesOrder().getItems();
 		Integer i = 0;
 		Double amount;
 		Integer sr = 0;
 		while (i < 7 || i <= list.size()) {
 			try {
-				SalesTransaction entry = list.get(i);
-				amount = entry.getQuantity() * entry.getPrice();
+				SalesOrderItem entry = list.get(i);
+				amount = entry.getQuantity() * entry.getUnitPrice();
 				sr = i+1;
 				createCell(table, sr.toString(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
 				createCell(table, entry.getProduct().getName(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
 				createCell(table, entry.getProduct().getHsnCode(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
 				createCell(table, entry.getQuantity().toString(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
-				createCell(table, entry.getPrice().toString(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
+				createCell(table, entry.getUnitPrice().toString(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
 				createCell(table, amount.toString(), TextAlignment.CENTER, 1, 1, false, fontSize, ht);
 			} catch (Exception e) {
 				addEmptyCells(table , fontSize, ht , 6);
